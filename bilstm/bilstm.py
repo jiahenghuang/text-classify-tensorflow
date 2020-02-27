@@ -76,19 +76,13 @@ class Dataset(object):
         
         for word in words:
             try:
-                
                 #中文
                 vector =model[word]
-                
                 vocab.append(word)
                 wordEmbedding.append(vector)
             except:
-                
                 print(word + " : 不存在于词向量中")
-                
         return vocab, np.array(wordEmbedding)
-    
-    
     
     def genVocabulary(self, reviews):
         """
@@ -106,10 +100,8 @@ class Dataset(object):
         # 去除低频词
         words = [item[0] for item in sortWordCount if item[1] >= self.miniFreq ]
         
-        
         #获取词列表和顺序对应的预训练权重矩阵
         vocab, wordEmbedding = self.getWordEmbedding(words)
-        
         self.wordEmbedding = wordEmbedding
         
         self.wordToIndex = dict(zip(vocab, list(range(len(vocab)))))
@@ -123,17 +115,12 @@ class Dataset(object):
         with open("../data/wordJson/indexToWord.json", "w", encoding="utf-8") as f:
             json.dump(self.indexToWord, f)
             
-            
-            
-            
     
     def reviewProcess(self, review, sequenceLength, wordToIndex):
         """
         将数据集中的每条评论里面的词，根据词表，映射为index表示
         每条评论 用index组成的定长数组来表示
-        
         """
-        
         reviewVec = np.zeros((sequenceLength))
         sequenceLen = sequenceLength
         
@@ -146,30 +133,21 @@ class Dataset(object):
                 reviewVec[i] = wordToIndex[review[i]]
             else:
                 reviewVec[i] = wordToIndex["UNK"]
-
         return reviewVec
 
-    
-    
-    
     def genTrainEvalData(self, x, y, rate):
         """
         生成训练集和验证集
         """
-        
         reviews = []
         labels = []
         
         # 遍历所有的文本，将文本中的词转换成index表示
         for i in range(len(x)):
-            
             reviewVec = self.reviewProcess(x[i], self.sequenceLength, self.wordToIndex)
             reviews.append(reviewVec)
-            
             labels.append([y[i]])
-            
         trainIndex = int(len(x) * rate)
-        
        
         #trainReviews = sequence.pad_sequences(reviews[:trainIndex], maxlen=self.sequenceLength)
         trainReviews = np.asarray(reviews[:trainIndex], dtype="int64")
@@ -183,25 +161,17 @@ class Dataset(object):
 
         return trainReviews, trainLabels, evalReviews, evalLabels
         
-        
-        
- 
-            
     def dataGen(self):
         """
         初始化训练集和验证集
         """
-        
         #读取停用词
         self.readStopWord(self.stopWordSource)
-        
         #读取数据集
         reviews, labels = self.readData(self.dataSource)
-        
         #分词、去停用词
         #生成 词汇-索引 映射表和预训练权重矩阵，并保存
         self.genVocabulary(reviews)
-        
         
         #初始化训练集和测试集
         trainReviews, trainLabels, evalReviews, evalLabels = self.genTrainEvalData(reviews, labels, self.rate)
@@ -210,8 +180,7 @@ class Dataset(object):
         
         self.evalReviews = evalReviews
         self.evalLabels = evalLabels
-        
-        
+
 data = Dataset(config)
 data.dataGen()
 
@@ -244,15 +213,11 @@ class AttentionLayer(Layer):
     def compute_output_shape(self, input_shape):
         return input_shape[0], input_shape[2]
 
-
-
 def train_lstm(n_symbols,embedding_weights,config):
-    
     model =Sequential([
         Embedding(input_dim=n_symbols, output_dim=config.embeddingSize,
                         weights=[embedding_weights],
                         input_length=config.sequenceLength),
-        
     #LSTM层
     Dropout(config.dropoutKeepProb),
     Bidirectional(LSTM(50,activation='tanh', dropout=0.5, recurrent_dropout=0.5,return_sequences=True), merge_mode='concat'),
@@ -260,14 +225,9 @@ def train_lstm(n_symbols,embedding_weights,config):
     Dropout(config.dropoutKeepProb),
     #BatchNormalization(),
     
-
     Dense(2, activation='softmax')])
-  
     model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
-
     return model
-    
-    
     
 wordEmbedding = data.wordEmbedding
 n_symbols=data.n_symbols
